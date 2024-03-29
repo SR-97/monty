@@ -1,47 +1,48 @@
 #include "monty.h"
+#include <stdio.h>
 
-stack_t **global_free;
+bus_t bus = {NULL, NULL, NULL, 0};
 
 /**
- * main - monty interpreter
- * @argc: number of agruments
- * @argv: name of file in argv[1]
- * Return: return success if interpreter worked
+ * main - monty code interpreter
+ * @argc: number of arguments
+ * @argv: monty file location
+ * Return: 0 on success
  */
-
 int main(int argc, char *argv[])
 {
-	FILE *monty_file;
-	/*int line = 1;*/
-	unsigned int count_lines = 0;
-	char *dataptr = NULL, *operator = NULL;
-	size_t size = 0;
-	stack_t *node = NULL;
+    char *content;
+    FILE *file;
+    size_t size = 0;
+    ssize_t read_line = 1;
+    stack_t *stack = NULL;
+    unsigned int counter = 0;
 
-	global_free = &node;
-	if (argc != 2)
-	{
-		dprintf(2, "USAGE: monty file\n");
-		free_all();
-		exit(EXIT_FAILURE);
-	}
-	monty_file = fopen(argv[1], "r");
-	if (monty_file == NULL)
-	{
-		dprintf(2, "Error: Can't open file %s\n", argv[1]);
-		free_all();
-		exit(EXIT_FAILURE);
-	}
-	while (getline(&dataptr, &size, monty_file) != -1)
-	{
-		count_lines++;
-		operator = strtok(dataptr, SEPARATORS);
-		if (operator != NULL && operator[0] != '#')
-			monty_function(operator, &node, count_lines);
-	}
-	pclose(monty_file);
-	if (dataptr)
-		free(dataptr);
-	free_all();
-	return (0);
+    if (argc != 2)
+    {
+        fprintf(stderr, "USAGE: monty file\n");
+        exit(EXIT_FAILURE);
+    }
+    file = fopen(argv[1], "r");
+    bus.file = file;
+    if (!file)
+    {
+        fprintf(stderr, "Error: Can't open file %s\n", argv[1]);
+        exit(EXIT_FAILURE);
+    }
+    while (read_line > 0)
+    {
+        content = NULL;
+        read_line = getline(&content, &size, file);
+        bus.content = content;
+        counter++;
+        if (read_line > 0)
+        {
+            execute(content, &stack, counter, file);
+        }
+        free(content);
+    }
+    free_stack(stack);
+    fclose(file);
+    return (0);
 }
